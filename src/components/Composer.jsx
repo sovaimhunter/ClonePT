@@ -3,6 +3,8 @@ function Composer({
   onChange,
   onSubmit,
   onStopGeneration,
+  onToggleModel,
+  model,
   disabled,
   isStreaming,
   placeholder = '向 DeepSeek 提问，Shift+Enter 换行',
@@ -23,15 +25,28 @@ function Composer({
 
   return (
     <div className="composer">
-      <textarea
-        className="composer-input"
-        placeholder={placeholder}
-        rows={4}
-        value={value}
-        onChange={(event) => onChange?.(event.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={disabled || isStreaming}
-      />
+      <div className="composer-input-wrapper">
+        <button
+          type="button"
+          className={`model-switch-btn ${
+            model === 'deepseek-reasoner' ? 'active' : ''
+          }`}
+          onClick={onToggleModel}
+          disabled={isStreaming || disabled}
+          aria-pressed={model === 'deepseek-reasoner'}
+        >
+          DeepThink
+        </button>
+        <textarea
+          className="composer-input"
+          placeholder={placeholder}
+          rows={4}
+          value={value}
+          onChange={(event) => onChange?.(event.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={disabled || isStreaming}
+        />
+      </div>
       <div className="composer-footer">
         <span className="draft-indicator">{draftHint ?? '草稿将自动保存'}</span>
         <div className="composer-actions">

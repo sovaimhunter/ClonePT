@@ -510,6 +510,16 @@
   background: #ffffff;
 }
 
+.composer-input-wrapper {
+  position: relative;
+}
+
+.composer-input-wrapper .model-switch-btn {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+}
+
 .composer-footer {
   display: flex;
   align-items: center;
@@ -528,6 +538,33 @@
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.model-switch-btn {
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+  font-size: 13px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.model-switch-btn.active {
+  background: linear-gradient(135deg, #fce7f3 0%, #f9a8d4 100%);
+  color: #9d174d;
+  border-color: rgba(244, 114, 182, 0.6);
+  box-shadow: 0 6px 14px rgba(244, 114, 182, 0.28);
+}
+
+.model-switch-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.model-switch-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .shortcut-hint {

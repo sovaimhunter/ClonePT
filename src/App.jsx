@@ -55,12 +55,14 @@ function App() {
   const composerValue = useChatStore((state) => state.composerValue)
   const isStreaming = useChatStore((state) => state.isStreaming)
   const streamingMessageId = useChatStore((state) => state.streamingMessageId)
+  const model = useChatStore((state) => state.model)
   const selectSession = useChatStore((state) => state.selectSession)
   const createNewSession = useChatStore((state) => state.createNewSession)
   const removeSession = useChatStore((state) => state.removeSession)
   const setComposerValue = useChatStore((state) => state.setComposerValue)
   const sendMessage = useChatStore((state) => state.sendMessage)
   const stopGeneration = useChatStore((state) => state.stopGeneration)
+  const toggleModel = useChatStore((state) => state.toggleModel)
   const messageListRef = useRef(null)
 
   useEffect(() => {
@@ -172,6 +174,8 @@ function App() {
           onChange={setComposerValue}
           onSubmit={sendMessage}
           onStopGeneration={stopGeneration}
+          onToggleModel={toggleModel}
+          model={model}
           disabled={!activeSession}
           isStreaming={isStreaming}
           draftHint={

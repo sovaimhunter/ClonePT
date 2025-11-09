@@ -18,6 +18,7 @@ export const useChatStore = create((set, get) => ({
   error: null,
   composerValue: '',
   lastSubmittedInput: '',
+  model: 'deepseek-chat',
   isStreaming: false,
   streamingMessageId: null,
   hasInitialized: false,
@@ -28,6 +29,13 @@ export const useChatStore = create((set, get) => ({
 
   clearError() {
     set({ error: null })
+  },
+
+  toggleModel() {
+    const current = get().model
+    set({
+      model: current === 'deepseek-chat' ? 'deepseek-reasoner' : 'deepseek-chat',
+    })
   },
 
   async initialize(force = false) {
@@ -154,7 +162,8 @@ export const useChatStore = create((set, get) => ({
   },
 
   async sendMessage() {
-    const { composerValue, activeSessionId, isStreaming, messages } = get()
+    const { composerValue, activeSessionId, isStreaming, messages, model } =
+      get()
     const text = (composerValue ?? '').trim()
 
     if (!text) return
@@ -200,6 +209,7 @@ export const useChatStore = create((set, get) => ({
     streamController = streamChat({
       sessionId: activeSessionId,
       message: text,
+      model,
       onSession: async ({ sessionId: newSessionId }) => {
         if (newSessionId && newSessionId !== get().activeSessionId) {
           set({ activeSessionId: newSessionId })
