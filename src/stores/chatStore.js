@@ -17,6 +17,7 @@ export const useChatStore = create((set, get) => ({
   loadingMessages: false,
   error: null,
   composerValue: '',
+  lastSubmittedInput: '',
   isStreaming: false,
   streamingMessageId: null,
   hasInitialized: false,
@@ -140,7 +141,16 @@ export const useChatStore = create((set, get) => ({
       streamController.abort()
       streamController = null
     }
-    set({ isStreaming: false, streamingMessageId: null })
+    const updates = {
+      isStreaming: false,
+      streamingMessageId: null,
+    }
+    const { lastSubmittedInput } = get()
+    if (lastSubmittedInput) {
+      updates.composerValue = lastSubmittedInput
+      updates.lastSubmittedInput = ''
+    }
+    set(updates)
   },
 
   async sendMessage() {
@@ -164,6 +174,7 @@ export const useChatStore = create((set, get) => ({
 
     set({
       composerValue: '',
+      lastSubmittedInput: text,
       error: null,
       messages: [
         ...messages,
@@ -210,7 +221,11 @@ export const useChatStore = create((set, get) => ({
       },
       onComplete: async ({ sessionId: completedSessionId }) => {
         streamController = null
-        set({ isStreaming: false, streamingMessageId: null })
+        set({
+          isStreaming: false,
+          streamingMessageId: null,
+          lastSubmittedInput: '',
+        })
         const targetSessionId =
           completedSessionId ?? get().activeSessionId
         await get().refreshSessions(false, false)
@@ -221,7 +236,12 @@ export const useChatStore = create((set, get) => ({
       onError: async (error) => {
         streamController = null
         if (error.message !== '请求已取消') {
-          set({ error: error.message || '生成失败' })
+          const lastInput = get().lastSubmittedInput
+          set({
+            error: error.message || '生成失败',
+            composerValue: lastInput || get().composerValue,
+            lastSubmittedInput: '',
+          })
         }
         set({ isStreaming: false, streamingMessageId: null })
         await get().refreshSessions(false, false)
