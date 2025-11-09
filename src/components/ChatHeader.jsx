@@ -1,9 +1,4 @@
-function ChatHeader({
-  session,
-  onCopyConversation,
-  onStopGeneration,
-  isStreaming,
-}) {
+function ChatHeader({ session, onCopyConversation }) {
   if (!session) {
     return (
       <header className="chat-header">
@@ -32,14 +27,6 @@ function ChatHeader({
           disabled={!session}
         >
           复制会话
-        </button>
-        <button
-          className="primary-outline-btn"
-          type="button"
-          onClick={onStopGeneration}
-          disabled={!isStreaming}
-        >
-          停止生成
         </button>
       </div>
     </header>

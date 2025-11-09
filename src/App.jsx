@@ -109,11 +109,9 @@ function App() {
       <main className="chat-panel">
         <ChatHeader
           session={headerSession}
-          isStreaming={isStreaming}
           onCopyConversation={() => {
             // TODO: 实现复制功能
           }}
-          onStopGeneration={stopGeneration}
         />
         <section className="message-list">
           {loadingSessions && sessions.length === 0 ? (
@@ -145,7 +143,9 @@ function App() {
           value={composerValue}
           onChange={setComposerValue}
           onSubmit={sendMessage}
-          disabled={isStreaming || !activeSession}
+          onStopGeneration={stopGeneration}
+          disabled={!activeSession}
+          isStreaming={isStreaming}
           draftHint={
             activeSession ? '输入内容后按 Enter 发送' : '新建会话后可开始输入'
           }

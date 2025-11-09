@@ -519,6 +519,15 @@
   box-shadow: 0 12px 24px rgba(37, 99, 235, 0.32);
 }
 
+.primary-btn-stop {
+  background: linear-gradient(135deg, #fca5a5 0%, #f97316 100%);
+  box-shadow: 0 10px 20px rgba(249, 115, 22, 0.28);
+}
+
+.primary-btn-stop:hover {
+  box-shadow: 0 12px 24px rgba(249, 115, 22, 0.32);
+}
+
 .primary-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
