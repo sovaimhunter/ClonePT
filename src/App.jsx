@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import './App.css'
 import 'highlight.js/styles/atom-one-dark.css'
 import Sidebar from './components/Sidebar.jsx'
@@ -61,11 +61,27 @@ function App() {
   const setComposerValue = useChatStore((state) => state.setComposerValue)
   const sendMessage = useChatStore((state) => state.sendMessage)
   const stopGeneration = useChatStore((state) => state.stopGeneration)
+  const messageListRef = useRef(null)
+
   useEffect(() => {
     useChatStore.getState().initialize().catch((error) => {
       console.error('初始化会话失败', error)
     })
   }, [])
+
+  useEffect(() => {
+    const container = messageListRef.current
+    if (!container) return
+
+    const scrollToBottom = () => {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: isStreaming ? 'smooth' : 'auto',
+      })
+    }
+
+    requestAnimationFrame(scrollToBottom)
+  }, [messages, isStreaming])
 
   const activeSession = useMemo(
     () => sessions.find((session) => session.id === activeSessionId) ?? null,
@@ -113,10 +129,10 @@ function App() {
             // TODO: 实现复制功能
           }}
         />
-        <section className="message-list">
+        <section className="message-list" ref={messageListRef}>
           {loadingSessions && sessions.length === 0 ? (
             <div className="message-placeholder">正在加载会话…</div>
-          ) : loadingMessages ? (
+          ) : loadingMessages && messages.length === 0 ? (
             <div className="message-placeholder">正在加载消息…</div>
           ) : displayMessages.length === 0 ? (
             <div className="message-placeholder">
