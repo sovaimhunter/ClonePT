@@ -104,6 +104,17 @@ function App() {
     tokenInfo: message.tokens ? `消耗 ${message.tokens} tokens` : null,
   }))
 
+  const handleCopyMessage = (text) => {
+    if (!text) return
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {
+        window.prompt('复制失败，请手动复制以下内容：', text)
+      })
+    } else {
+      window.prompt('复制内容：', text)
+    }
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -150,6 +161,7 @@ function App() {
                 content={message.content}
                 tokenInfo={message.tokenInfo}
                 isStreaming={isStreaming && message.id === streamingMessageId}
+                onCopy={handleCopyMessage}
               />
             ))
           )}

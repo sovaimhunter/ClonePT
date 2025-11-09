@@ -9,12 +9,22 @@ function Message({
   content,
   tokenInfo,
   isStreaming,
+  onCopy,
 }) {
   const isUser = role === 'user'
   const safeContent = content ?? ''
+  const canCopy = Boolean(safeContent) && !isStreaming
+
+  const handleCopy = () => {
+    if (!canCopy) return
+    onCopy?.(safeContent)
+  }
 
   return (
-    <article className={`message ${isUser ? 'message-user' : 'message-assistant'}`}>
+    <article
+      className={`message ${isUser ? 'message-user' : 'message-assistant'}`}
+      aria-live={isStreaming ? 'polite' : undefined}
+    >
       <div className="message-avatar">{isUser ? '我' : 'AI'}</div>
       <div className="message-content">
         <div className="message-meta">
@@ -32,11 +42,19 @@ function Message({
           </div>
         </div>
         <div className="message-footer">
-          {!isUser && <button className="ghost-btn">复制</button>}
           {tokenInfo && <span className="message-token">{tokenInfo}</span>}
           {isStreaming && <span className="message-token">生成中…</span>}
         </div>
       </div>
+      {canCopy && (
+        <button
+          type="button"
+          className="message-copy-trigger"
+          onClick={handleCopy}
+          title="复制消息内容"
+          data-align={isUser ? 'right' : 'left'}
+        />
+      )}
     </article>
   )
 }

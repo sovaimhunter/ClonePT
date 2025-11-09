@@ -19,6 +19,8 @@ function Composer({
     }
   }
 
+  const hasText = Boolean(value?.trim())
+
   return (
     <div className="composer">
       <textarea
@@ -48,7 +50,7 @@ function Composer({
                 onSubmit?.()
               }
             }}
-            disabled={disabled || (!isStreaming && !value?.trim())}
+            disabled={disabled || (!isStreaming && !hasText)}
           >
             {isStreaming ? '停止生成' : '发送'}
           </button>
