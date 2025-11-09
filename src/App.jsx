@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import './App.css'
+import 'highlight.js/styles/atom-one-dark.css'
 import Sidebar from './components/Sidebar.jsx'
 import ChatHeader from './components/ChatHeader.jsx'
 import Message from './components/Message.jsx'

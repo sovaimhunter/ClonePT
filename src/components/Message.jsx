@@ -1,9 +1,6 @@
-function renderContent(content) {
-  if (!content) return null
-  return content.split(/\n{2,}/).map((block, index) => (
-    <p key={index}>{block}</p>
-  ))
-}
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
 
 function Message({
   role = 'assistant',
@@ -14,6 +11,7 @@ function Message({
   isStreaming,
 }) {
   const isUser = role === 'user'
+  const safeContent = content ?? ''
 
   return (
     <article className={`message ${isUser ? 'message-user' : 'message-assistant'}`}>
@@ -24,7 +22,14 @@ function Message({
           <span className="message-time">{time}</span>
         </div>
         <div className={`message-body ${isStreaming ? 'message-streaming' : ''}`}>
-          {renderContent(content)}
+          <div className="markdown-body">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeHighlight]}
+            >
+              {safeContent}
+            </ReactMarkdown>
+          </div>
         </div>
         <div className="message-footer">
           {!isUser && <button className="ghost-btn">复制</button>}
