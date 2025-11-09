@@ -57,6 +57,7 @@ function App() {
   const streamingMessageId = useChatStore((state) => state.streamingMessageId)
   const selectSession = useChatStore((state) => state.selectSession)
   const createNewSession = useChatStore((state) => state.createNewSession)
+  const removeSession = useChatStore((state) => state.removeSession)
   const setComposerValue = useChatStore((state) => state.setComposerValue)
   const sendMessage = useChatStore((state) => state.sendMessage)
   const stopGeneration = useChatStore((state) => state.stopGeneration)
@@ -94,6 +95,16 @@ function App() {
         activeSessionId={activeSessionId}
         onSelectSession={selectSession}
         onCreateSession={createNewSession}
+        onDeleteSession={(sessionId) => {
+          if (!sessionId) return
+          if (
+            window.confirm(
+              '确定要删除该对话吗？此操作不可撤销，将删除会话及其全部消息。',
+            )
+          ) {
+            removeSession(sessionId)
+          }
+        }}
       />
       <main className="chat-panel">
         <ChatHeader

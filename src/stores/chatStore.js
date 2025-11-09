@@ -3,6 +3,7 @@ import {
   listSessions,
   listMessages,
   createSession,
+  deleteSession,
 } from '../services/chatApi.js'
 import { streamChat } from '../services/chatStream.js'
 
@@ -108,6 +109,29 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       console.error(error)
       set({ error: error.message || '创建会话失败' })
+    }
+  },
+
+  async removeSession(sessionId) {
+    if (!sessionId) return
+    const currentSessionId = get().activeSessionId
+    try {
+      await deleteSession(sessionId)
+      set((state) => ({
+        sessions: state.sessions.filter((session) => session.id !== sessionId),
+      }))
+
+      if (sessionId === currentSessionId) {
+        const { sessions } = get()
+        const nextSessionId = sessions[0]?.id ?? null
+        set({ activeSessionId: nextSessionId, messages: [], composerValue: '' })
+        if (nextSessionId) {
+          await get().refreshMessages(nextSessionId)
+        }
+      }
+    } catch (error) {
+      console.error(error)
+      set({ error: error.message || '删除会话失败' })
     }
   },
 

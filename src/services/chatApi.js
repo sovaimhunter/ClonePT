@@ -44,3 +44,14 @@ export async function createSession({ title, model } = {}) {
   return data
 }
 
+export async function deleteSession(sessionId) {
+  const { error } = await supabase
+    .from('sessions')
+    .delete()
+    .eq('id', sessionId)
+
+  if (error) {
+    throw error
+  }
+}
+

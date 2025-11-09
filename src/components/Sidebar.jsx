@@ -28,6 +28,7 @@ function Sidebar({
   activeSessionId,
   onSelectSession,
   onCreateSession,
+  onDeleteSession,
 }) {
   return (
     <aside className="sidebar">
@@ -52,23 +53,38 @@ function Sidebar({
           <div className="session-empty">暂无对话，点击上方按钮开始一次新会话。</div>
         ) : (
           sessions.map((session) => (
-            <button
+            <div
               key={session.id}
-              type="button"
-              className={`session-item ${
+              className={`session-item-wrapper ${
                 session.id === activeSessionId ? 'active' : ''
               }`}
-              onClick={() => onSelectSession?.(session.id)}
             >
-              <div className="session-title">
-                {session.title || '未命名对话'}
-              </div>
-              <div className="session-meta">
-                <span>{session.model ?? 'DeepSeek · Chat'}</span>
-                <span>·</span>
-                <span>更新于 {formatUpdatedAt(session.updated_at)}</span>
-              </div>
-            </button>
+              <button
+                type="button"
+                className="session-item"
+                onClick={() => onSelectSession?.(session.id)}
+              >
+                <div className="session-title">
+                  {session.title || '未命名对话'}
+                </div>
+                <div className="session-meta">
+                  <span>{session.model ?? 'DeepSeek · Chat'}</span>
+                  <span>·</span>
+                  <span>更新于 {formatUpdatedAt(session.updated_at)}</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="session-delete-btn"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onDeleteSession?.(session.id)
+                }}
+                aria-label="删除对话"
+              >
+                ×
+              </button>
+            </div>
           ))
         )}
       </div>
