@@ -181,6 +181,8 @@ export const useChatStore = create((set, get) => ({
     const tempUserId = `temp-user-${now}`
     const tempAssistantId = `temp-assistant-${now}`
 
+    const useReasoning = model === 'deepseek-reasoner'
+
     set({
       composerValue: '',
       lastSubmittedInput: text,
@@ -200,6 +202,7 @@ export const useChatStore = create((set, get) => ({
           content: '',
           created_at: now,
           temp: true,
+          ...(useReasoning ? { reasoning: '', model } : {}),
         },
       ],
       isStreaming: true,
@@ -210,37 +213,75 @@ export const useChatStore = create((set, get) => ({
       sessionId: activeSessionId,
       message: text,
       model,
-      onSession: async ({ sessionId: newSessionId }) => {
+      onSession: async ({ sessionId: newSessionId, session }) => {
         if (newSessionId && newSessionId !== get().activeSessionId) {
           set({ activeSessionId: newSessionId })
         }
-        await get().refreshSessions(false, false)
-      },
-      onDelta: ({ content }) => {
-        if (!content) return
-        set((state) => ({
-          messages: state.messages.map((message) =>
-            message.id === tempAssistantId
+        if (session) {
+          set((state) => {
+            const exists = state.sessions.some(
+              (item) => item.id === session.id,
+            )
+            return exists
               ? {
-                  ...message,
-                  content: `${message.content || ''}${content}`,
+                  sessions: state.sessions.map((item) =>
+                    item.id === session.id ? { ...item, ...session } : item,
+                  ),
                 }
-              : message,
-          ),
+              : { sessions: [session, ...state.sessions] }
+          })
+        }
+      },
+      onDelta: ({ content, reasoning }) => {
+        set((state) => ({
+          messages: state.messages.map((message) => {
+            if (message.id !== tempAssistantId) return message
+            const updated = {
+              ...message,
+              content: content
+                ? `${message.content || ''}${content}`
+                : message.content,
+            }
+            if (model === 'deepseek-reasoner' && reasoning) {
+              updated.reasoning = `${message.reasoning || ''}${reasoning}`
+            }
+            return updated
+          }),
         }))
       },
-      onComplete: async ({ sessionId: completedSessionId }) => {
+      onComplete: async ({
+        sessionId: completedSessionId,
+        messageId: finalMessageId,
+        reasoning,
+      }) => {
         streamController = null
         set({
           isStreaming: false,
           streamingMessageId: null,
           lastSubmittedInput: '',
+          messages:
+            model === 'deepseek-reasoner' && reasoning
+              ? get().messages.map((message) =>
+                  message.id === tempAssistantId
+                    ? { ...message, reasoning }
+                    : message,
+                )
+              : get().messages,
         })
         const targetSessionId =
           completedSessionId ?? get().activeSessionId
         await get().refreshSessions(false, false)
         if (targetSessionId) {
           await get().refreshMessages(targetSessionId)
+          if (model === 'deepseek-reasoner' && finalMessageId && reasoning) {
+            set((state) => ({
+              messages: state.messages.map((message) =>
+                message.id === finalMessageId
+                  ? { ...message, reasoning }
+                  : message,
+              ),
+            }))
+          }
         }
       },
       onError: async (error) => {

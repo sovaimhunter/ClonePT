@@ -27,6 +27,7 @@ export function streamChat({
 
   ;(async () => {
     try {
+      const useReasoning = model === 'deepseek-reasoner'
       const response = await fetch(`${functionBaseUrl}/chat`, {
         method: 'POST',
         headers: {
@@ -54,6 +55,7 @@ export function streamChat({
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
+      let reasoningBuffer = ''
 
       while (true) {
         const { done, value } = await reader.read()
@@ -91,9 +93,50 @@ export function streamChat({
               break
             }
             case 'delta': {
+              let payload
               try {
-                const payload = JSON.parse(dataStr)
-                onDelta?.(payload)
+                payload = JSON.parse(dataStr)
+              } catch (_parseErr) {
+                if (!useReasoning && dataStr && dataStr !== '[DONE]') {
+                  onDelta?.({ content: dataStr, reasoning: '' })
+                }
+                break
+              }
+
+              try {
+                const delta = payload?.choices?.[0]?.delta ?? {}
+                
+                // 提取 content
+                let textChunk = ''
+                if (typeof delta?.content === 'string') {
+                  textChunk = delta.content
+                } else if (Array.isArray(delta?.content)) {
+                  textChunk = delta.content
+                    .map((item) => item?.text ?? '')
+                    .join('')
+                }
+                
+                // 提取 reasoning_content (仅 deepseek-reasoner)
+                let reasoningChunk = ''
+                if (useReasoning) {
+                  if (typeof delta?.reasoning_content === 'string') {
+                    reasoningChunk = delta.reasoning_content
+                    reasoningBuffer += reasoningChunk
+                  } else if (Array.isArray(delta?.reasoning_content)) {
+                    reasoningChunk = delta.reasoning_content
+                      .map((item) => item?.text ?? '')
+                      .join('')
+                    reasoningBuffer += reasoningChunk
+                  }
+                }
+                
+                // 只要有内容就推送
+                if (textChunk || reasoningChunk) {
+                  onDelta?.({
+                    content: textChunk,
+                    reasoning: reasoningChunk,
+                  })
+                }
               } catch (error) {
                 console.error('解析 delta 事件失败', error)
               }
@@ -102,10 +145,15 @@ export function streamChat({
             case 'complete': {
               try {
                 const payload = JSON.parse(dataStr)
-                onComplete?.(payload)
+                onComplete?.({
+                  ...payload,
+                  reasoning: useReasoning ? reasoningBuffer : '',
+                })
               } catch (error) {
                 console.error('解析 complete 事件失败', error)
-                onComplete?.({})
+                onComplete?.({
+                  reasoning: useReasoning ? reasoningBuffer : '',
+                })
               }
               break
             }

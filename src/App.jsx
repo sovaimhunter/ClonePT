@@ -104,6 +104,7 @@ function App() {
     name: message.role === 'user' ? '我' : 'DeepSeek 助手',
     time: formatMessageTime(message.created_at),
     tokenInfo: message.tokens ? `消耗 ${message.tokens} tokens` : null,
+    reasoning: message.reasoning,
   }))
 
   const handleCopyMessage = (text) => {
@@ -162,6 +163,7 @@ function App() {
                 time={message.time}
                 content={message.content}
                 tokenInfo={message.tokenInfo}
+                reasoning={message.reasoning}
                 isStreaming={isStreaming && message.id === streamingMessageId}
                 onCopy={handleCopyMessage}
               />

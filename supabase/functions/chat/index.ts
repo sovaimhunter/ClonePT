@@ -149,6 +149,7 @@ serve(async (req) => {
 
         const reader = response.body.getReader()
         let assistantBuffer = ''
+        let reasoningBuffer = ''
         let sseBuffer = ''
         let assistantMessageId: number | null = null
         let streamFinished = false
@@ -186,20 +187,29 @@ serve(async (req) => {
 
             try {
               const data = JSON.parse(payloadStr)
-              const delta = data?.choices?.[0]?.delta?.content
-              if (delta) {
-                assistantBuffer += delta
+              const deltaObj = data?.choices?.[0]?.delta ?? {}
+              
+              // 提取 content 和 reasoning_content
+              const content = deltaObj.content
+              const reasoning = deltaObj.reasoning_content
+              
+              if (content) {
+                assistantBuffer += content
+              }
+              if (reasoning) {
+                reasoningBuffer += reasoning
+              }
+              
+              // 转发完整的 delta 给前端
+              if (content || reasoning) {
                 controller.enqueue(
                   encoder.encode(
-                    `event: delta\ndata: ${JSON.stringify({
-                      type: 'delta',
-                      content: delta,
-                    })}\n\n`,
+                    `event: delta\ndata: ${JSON.stringify(data)}\n\n`,
                   ),
                 )
               }
             } catch (_parseErr) {
-              // 非 JSON，直接透传文本
+              // 非 JSON，直接透传文本（仅普通模式）
               assistantBuffer += payloadStr
               controller.enqueue(
                 encoder.encode(
@@ -218,14 +228,32 @@ serve(async (req) => {
         }
 
         if (assistantBuffer.trim().length > 0) {
+          const messageData: {
+            session_id: number
+            role: string
+            content: string
+            reasoning?: string
+            model?: string
+          } = {
+            session_id: targetSessionId,
+            role: 'assistant',
+            content: assistantBuffer,
+          }
+          
+          // 如果有推理内容，保存到数据库
+          if (reasoningBuffer.trim().length > 0) {
+            messageData.reasoning = reasoningBuffer
+          }
+          
+          // 保存模型信息
+          if (model) {
+            messageData.model = model
+          }
+
           const { data: assistantMessage, error: assistantError } =
             await supabase
               .from('messages')
-              .insert({
-                session_id: targetSessionId,
-                role: 'assistant',
-                content: assistantBuffer,
-              })
+              .insert(messageData)
               .select('id')
               .single()
 
@@ -247,6 +275,7 @@ serve(async (req) => {
               type: 'complete',
               sessionId: targetSessionId,
               messageId: assistantMessageId,
+              reasoning: reasoningBuffer,
             })}\n\n`,
           ),
         )
