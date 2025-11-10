@@ -34,14 +34,17 @@ function Message({
     setLightboxImage(null)
   }
 
-  // 从 content 中提取图片 Markdown 和文本
-  const extractImagesAndText = (markdown) => {
-    if (!markdown) return { images: [], text: '' }
+  // 从 content 中提取图片、文件和文本
+  const extractAttachmentsAndText = (markdown) => {
+    if (!markdown) return { images: [], files: [], text: '' }
     
     const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
+    const fileRegex = /\*\*文件: ([^\*]+)\*\*\n```\n([\s\S]*?)\n```/g
     const images = []
+    const files = []
     let match
     
+    // 提取图片
     while ((match = imageRegex.exec(markdown)) !== null) {
       images.push({
         alt: match[1],
@@ -49,13 +52,24 @@ function Message({
       })
     }
     
-    // 移除图片 Markdown，保留文本
-    const text = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)\n*/g, '').trim()
+    // 提取文件（PDF、TXT 等）
+    while ((match = fileRegex.exec(markdown)) !== null) {
+      files.push({
+        name: match[1],
+        content: match[2],
+      })
+    }
     
-    return { images, text }
+    // 移除图片和文件 Markdown，保留用户输入的文本
+    let text = markdown
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)\n*/g, '')
+      .replace(/\*\*文件: ([^\*]+)\*\*\n```\n[\s\S]*?\n```\n*/g, '')
+      .trim()
+    
+    return { images, files, text }
   }
 
-  const { images, text } = isUser ? extractImagesAndText(safeContent) : { images: [], text: safeContent }
+  const { images, files, text } = isUser ? extractAttachmentsAndText(safeContent) : { images: [], files: [], text: safeContent }
 
   return (
     <article
@@ -64,11 +78,11 @@ function Message({
     >
       <div className="message-avatar">{isUser ? '我' : 'AI'}</div>
       <div className="message-wrapper">
-        {isUser && images.length > 0 && (
-          <div className="message-images-above">
+        {isUser && (images.length > 0 || files.length > 0) && (
+          <div className="message-attachments-above">
             {images.map((img, index) => (
               <img
-                key={index}
+                key={`img-${index}`}
                 src={img.url}
                 alt={img.alt}
                 className="message-image-thumbnail"
@@ -82,6 +96,14 @@ function Message({
                   }
                 }}
               />
+            ))}
+            {files.map((file, index) => (
+              <div key={`file-${index}`} className="message-file-thumbnail" title={file.name}>
+                <div className="file-icon">
+                  {file.name.toLowerCase().endsWith('.pdf') ? '📄' : '📝'}
+                </div>
+                <div className="file-name">{file.name}</div>
+              </div>
             ))}
           </div>
         )}

@@ -57,7 +57,12 @@ serve(async (req) => {
     sessionId?: number
     message?: string
     model?: string
-    attachments?: Array<{ url: string; type: string; name: string }>
+    attachments?: Array<{ 
+      url?: string
+      type: string
+      name: string
+      textContent?: string
+    }>
   } = {}
 
   try {
@@ -112,21 +117,43 @@ serve(async (req) => {
           targetSessionId = newSession.id
         }
 
-        // 构建用户消息内容（包含附件的 Markdown）
+        // 构建用户消息内容（图片和文档）
         let userMessageContent = message
         
         if (attachments.length > 0) {
-          // 在消息前添加图片 Markdown
-          const attachmentMarkdown = attachments
-            .map((att) => {
-              if (att.type.startsWith('image/')) {
-                return `![${att.name}](${att.url})`
-              }
-              return `[📎 ${att.name}](${att.url})`
-            })
-            .join('\n')
+          console.log('后端接收附件:', attachments.map((att: any) => ({
+            name: att.name,
+            type: att.type,
+            hasUrl: !!att.url,
+            hasTextContent: !!att.textContent,
+            textLength: att.textContent?.length || 0,
+          })))
+
+          const contentParts: string[] = []
+
+          // 处理图片
+          const imageParts = attachments
+            .filter((att: any) => att.type.startsWith('image/'))
+            .map((att: any) => `![${att.name}](${att.url})`)
           
-          userMessageContent = attachmentMarkdown + '\n\n' + message
+          if (imageParts.length > 0) {
+            contentParts.push(...imageParts)
+          }
+
+          // 处理文档（前端已提取的文本内容）
+          for (const att of attachments) {
+            if (att.textContent) {
+              console.log(`嵌入文档: ${att.name}, 长度: ${att.textContent.length}`)
+              contentParts.push(
+                `**文件: ${att.name}**\n\`\`\`\n${att.textContent}\n\`\`\``,
+              )
+            }
+          }
+          
+          if (contentParts.length > 0) {
+            userMessageContent = contentParts.join('\n\n') + '\n\n' + message
+            console.log(`最终消息长度: ${userMessageContent.length}`)
+          }
         }
 
         const { error: insertUserMessageError } = await supabase

@@ -116,7 +116,7 @@ function Composer({
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,.pdf,.doc,.docx,.txt"
+                accept="image/*,.pdf,.txt,.md,.json,.csv,.js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.h,.html,.css"
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
               />

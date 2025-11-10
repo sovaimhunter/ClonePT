@@ -6,6 +6,7 @@ import {
   deleteSession,
 } from '../services/chatApi.js'
 import { streamChat } from '../services/chatStream.js'
+import { extractTextFromPDF, isPDF } from '../utils/pdfExtractor.js'
 
 let streamController = null
 
@@ -54,7 +55,7 @@ export const useChatStore = create((set, get) => ({
   },
 
   async uploadFiles(files) {
-    const { activeSessionId } = get()
+    const { activeSessionId, model } = get()
     set({ uploadingFiles: true, error: null })
 
     try {
@@ -69,37 +70,92 @@ export const useChatStore = create((set, get) => ({
       }
 
       for (const file of files) {
-        // 创建预览
         let preview = null
-        if (file.type.startsWith('image/')) {
+        let textContent = null
+        let url = null
+
+        // 判断文件类型
+        const isImage = file.type.startsWith('image/')
+        const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+        const isTextFile = file.type.startsWith('text/') || 
+                          file.name.match(/\.(txt|md|csv|json|js|jsx|ts|tsx|html|css|py|java|cpp|c|h)$/i)
+
+        if (isImage) {
+          // 图片：上传到 Supabase Storage，使用 URL
           preview = URL.createObjectURL(file)
+
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('sessionId', activeSessionId || '')
+          formData.append('type', 'vision')
+
+          const response = await fetch(`${functionBaseUrl}/upload-file`, {
+            method: 'POST',
+            headers: {
+              ...(supabaseAnonKey
+                ? {
+                    apikey: supabaseAnonKey,
+                    Authorization: `Bearer ${supabaseAnonKey}`,
+                  }
+                : {}),
+            },
+            body: formData,
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || '图片上传失败')
+          }
+
+          const uploadedFile = await response.json()
+          url = uploadedFile.url
+        } else if (isPDF && model === 'gpt-4o') {
+          // PDF：在前端提取文本
+          set({ error: `正在提取 ${file.name} 的文本...` })
+          
+          try {
+            textContent = await extractTextFromPDF(file, {
+              maxPages: 100,
+              maxChars: 100000,
+            })
+            
+            if (!textContent || textContent.trim().length === 0) {
+              throw new Error('PDF 中没有可提取的文本（可能是扫描版）')
+            }
+            
+            console.log(`PDF 文本提取成功: ${textContent.length} 字符`)
+            set({ error: null })
+          } catch (err) {
+            console.error('PDF 提取失败', err)
+            set({ error: null })
+            throw new Error(`PDF 提取失败: ${err.message}`)
+          }
+        } else if (isTextFile && model === 'gpt-4o') {
+          // TXT 等文本文件：直接读取内容
+          set({ error: `正在读取 ${file.name}...` })
+          
+          try {
+            textContent = await file.text()
+            
+            if (!textContent || textContent.trim().length === 0) {
+              throw new Error('文件内容为空')
+            }
+            
+            // 限制文本长度
+            if (textContent.length > 100000) {
+              textContent = textContent.slice(0, 100000) + '\n\n... (文件过长，已截断)'
+            }
+            
+            console.log(`文本文件读取成功: ${textContent.length} 字符`)
+            set({ error: null })
+          } catch (err) {
+            console.error('文本文件读取失败', err)
+            set({ error: null })
+            throw new Error(`文本文件读取失败: ${err.message}`)
+          }
+        } else {
+          throw new Error('不支持的文件类型或模型（仅 GPT-4o 支持文档上传）')
         }
-
-        // 上传文件
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('sessionId', activeSessionId || '')
-        formData.append('type', 'vision')
-
-        const response = await fetch(`${functionBaseUrl}/upload-file`, {
-          method: 'POST',
-          headers: {
-            ...(supabaseAnonKey
-              ? {
-                  apikey: supabaseAnonKey,
-                  Authorization: `Bearer ${supabaseAnonKey}`,
-                }
-              : {}),
-          },
-          body: formData,
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || '文件上传失败')
-        }
-
-        const uploadedFile = await response.json()
 
         // 添加到附件列表
         get().addAttachment({
@@ -107,8 +163,8 @@ export const useChatStore = create((set, get) => ({
           type: file.type,
           size: file.size,
           preview,
-          url: uploadedFile.url,
-          storagePath: uploadedFile.storagePath,
+          url,
+          textContent,
         })
       }
     } catch (error) {
@@ -270,21 +326,29 @@ export const useChatStore = create((set, get) => ({
 
     const useReasoning = model === 'deepseek-reasoner'
 
-    // 构建用户消息内容（包含附件的 Markdown）
+    // 构建用户消息内容（图片和文档）
     let userMessageContent = text
     
     if (attachments.length > 0) {
-      // 在消息前添加图片 Markdown
-      const attachmentMarkdown = attachments
-        .map((att) => {
-          if (att.type?.startsWith('image/')) {
-            return `![${att.name}](${att.url || att.preview})`
-          }
-          return `[📎 ${att.name}](${att.url || att.preview})`
-        })
-        .join('\n')
+      const contentParts = []
       
-      userMessageContent = attachmentMarkdown + '\n\n' + text
+      // 处理图片
+      attachments
+        .filter((att) => att.type?.startsWith('image/'))
+        .forEach((att) => {
+          contentParts.push(`![${att.name}](${att.url || att.preview})`)
+        })
+      
+      // 处理文档（PDF 文本内容）
+      attachments
+        .filter((att) => att.textContent)
+        .forEach((att) => {
+          contentParts.push(`**文件: ${att.name}**\n\`\`\`\n${att.textContent}\n\`\`\``)
+        })
+      
+      if (contentParts.length > 0) {
+        userMessageContent = contentParts.join('\n\n') + '\n\n' + text
+      }
     }
 
     // 构建用户消息
@@ -317,6 +381,20 @@ export const useChatStore = create((set, get) => ({
       streamingMessageId: tempAssistantId,
     })
 
+    // 保存附件副本（清空前）
+    const attachmentsCopy = attachments.length > 0 ? [...attachments] : undefined
+
+    // 调试：检查附件内容
+    if (attachmentsCopy) {
+      console.log('前端发送附件:', attachmentsCopy.map(att => ({
+        name: att.name,
+        type: att.type,
+        hasUrl: !!att.url,
+        hasTextContent: !!att.textContent,
+        textLength: att.textContent?.length || 0,
+      })))
+    }
+
     // 清空附件
     get().clearAttachments()
 
@@ -324,7 +402,7 @@ export const useChatStore = create((set, get) => ({
       sessionId: activeSessionId,
       message: text,
       model,
-      attachments: attachments.length > 0 ? attachments : undefined,
+      attachments: attachmentsCopy,
       onSession: async ({ sessionId: newSessionId, session }) => {
         if (newSessionId && newSessionId !== get().activeSessionId) {
           set({ activeSessionId: newSessionId })

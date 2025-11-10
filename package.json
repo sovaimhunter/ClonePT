@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.80.0",
     "highlight.js": "^11.11.1",
+    "pdfjs-dist": "^5.4.394",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-markdown": "^10.1.0",

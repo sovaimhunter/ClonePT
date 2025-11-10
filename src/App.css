@@ -827,8 +827,8 @@
   flex: 1;
 }
 
-/* 图片显示在对话框外面上方 */
-.message-images-above {
+/* 附件显示在对话框外面上方（图片 + 文件） */
+.message-attachments-above {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -850,6 +850,46 @@
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
   border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* 文件缩略图 */
+.message-file-thumbnail {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.95));
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.message-file-thumbnail:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.message-file-thumbnail .file-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.message-file-thumbnail .file-name {
+  font-size: 12px;
+  color: #475569;
+  text-align: center;
+  padding: 0 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 /* AI 消息中的图片保持正常大小 */
