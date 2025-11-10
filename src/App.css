@@ -819,38 +819,37 @@
   cursor: not-allowed;
 }
 
-/* Markdown 渲染的图片样式（用户消息中） */
-.message-user .markdown-body img {
-  max-width: 200px;
-  max-height: 200px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: block;
-  margin: 8px 0;
+/* 消息包装器 */
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
 }
 
-.message-user .markdown-body img:hover {
-  transform: scale(1.02);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
-}
-
-/* 多张图片横向排列 */
-.message-user .markdown-body p:has(img) {
+/* 图片显示在对话框外面上方 */
+.message-images-above {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  align-items: flex-start;
+  margin-bottom: 6px;
 }
 
-.message-user .markdown-body p:has(img) img {
-  max-width: 150px;
-  max-height: 150px;
+.message-image-thumbnail {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.message-image-thumbnail:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  border-color: rgba(59, 130, 246, 0.5);
 }
 
 /* AI 消息中的图片保持正常大小 */

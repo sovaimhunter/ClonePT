@@ -23,13 +23,49 @@ function Message({
     onCopy?.(safeContent)
   }
 
+  // 从 content 中提取图片 Markdown 和文本
+  const extractImagesAndText = (markdown) => {
+    if (!markdown) return { images: [], text: '' }
+    
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
+    const images = []
+    let match
+    
+    while ((match = imageRegex.exec(markdown)) !== null) {
+      images.push({
+        alt: match[1],
+        url: match[2],
+      })
+    }
+    
+    // 移除图片 Markdown，保留文本
+    const text = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)\n*/g, '').trim()
+    
+    return { images, text }
+  }
+
+  const { images, text } = isUser ? extractImagesAndText(safeContent) : { images: [], text: safeContent }
+
   return (
     <article
       className={`message ${isUser ? 'message-user' : 'message-assistant'}`}
       aria-live={isStreaming ? 'polite' : undefined}
     >
       <div className="message-avatar">{isUser ? '我' : 'AI'}</div>
-      <div className="message-content">
+      <div className="message-wrapper">
+        {isUser && images.length > 0 && (
+          <div className="message-images-above">
+            {images.map((img, index) => (
+              <img
+                key={index}
+                src={img.url}
+                alt={img.alt}
+                className="message-image-thumbnail"
+              />
+            ))}
+          </div>
+        )}
+        <div className="message-content">
           <div className="message-meta">
             <span className="message-author">{name}</span>
             <span className="message-time">{time}</span>
@@ -50,7 +86,7 @@ function Message({
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight]}
             >
-              {safeContent}
+              {text}
             </ReactMarkdown>
           </div>
         </div>
@@ -58,16 +94,17 @@ function Message({
           {tokenInfo && <span className="message-token">{tokenInfo}</span>}
           {isStreaming && <span className="message-token">生成中…</span>}
         </div>
+        </div>
+        {canCopy && (
+          <button
+            type="button"
+            className="message-copy-trigger"
+            onClick={handleCopy}
+            title="复制消息内容"
+            data-align={isUser ? 'right' : 'left'}
+          />
+        )}
       </div>
-      {canCopy && (
-        <button
-          type="button"
-          className="message-copy-trigger"
-          onClick={handleCopy}
-          title="复制消息内容"
-          data-align={isUser ? 'right' : 'left'}
-        />
-      )}
     </article>
   )
 }
