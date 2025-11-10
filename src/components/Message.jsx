@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import ImageLightbox from './ImageLightbox.jsx'
 
-function Message({
+const Message = memo(function Message({
   role = 'assistant',
   name,
   time,
@@ -156,7 +156,7 @@ function Message({
       )}
     </article>
   )
-}
+})
 
 export default Message
 

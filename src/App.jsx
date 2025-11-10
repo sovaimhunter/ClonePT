@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useCallback } from 'react'
 import './App.css'
 import 'highlight.js/styles/atom-one-dark.css'
 import Sidebar from './components/Sidebar.jsx'
@@ -46,6 +46,7 @@ function formatMessageTime(value) {
 }
 
 function App() {
+  // 优化：分别选择状态，避免对象引用问题
   const sessions = useChatStore((state) => state.sessions)
   const activeSessionId = useChatStore((state) => state.activeSessionId)
   const messages = useChatStore((state) => state.messages)
@@ -57,6 +58,8 @@ function App() {
   const streamingMessageId = useChatStore((state) => state.streamingMessageId)
   const model = useChatStore((state) => state.model)
   const attachments = useChatStore((state) => state.attachments)
+  
+  // 优化：actions 不会触发重新渲染
   const selectSession = useChatStore((state) => state.selectSession)
   const createNewSession = useChatStore((state) => state.createNewSession)
   const removeSession = useChatStore((state) => state.removeSession)
@@ -66,6 +69,7 @@ function App() {
   const setModel = useChatStore((state) => state.setModel)
   const uploadFiles = useChatStore((state) => state.uploadFiles)
   const removeAttachment = useChatStore((state) => state.removeAttachment)
+  
   const messageListRef = useRef(null)
 
   useEffect(() => {
@@ -102,15 +106,21 @@ function App() {
       }
     : null
 
-  const displayMessages = messages.map((message) => ({
-    ...message,
-    name: message.role === 'user' ? '我' : 'DeepSeek 助手',
-    time: formatMessageTime(message.created_at),
-    tokenInfo: message.tokens ? `消耗 ${message.tokens} tokens` : null,
-    reasoning: message.reasoning,
-  }))
+  // 优化：使用 useMemo 缓存消息转换
+  const displayMessages = useMemo(
+    () =>
+      messages.map((message) => ({
+        ...message,
+        name: message.role === 'user' ? '我' : 'DeepSeek 助手',
+        time: formatMessageTime(message.created_at),
+        tokenInfo: message.tokens ? `消耗 ${message.tokens} tokens` : null,
+        reasoning: message.reasoning,
+      })),
+    [messages],
+  )
 
-  const handleCopyMessage = (text) => {
+  // 优化：使用 useCallback 缓存函数
+  const handleCopyMessage = useCallback((text) => {
     if (!text) return
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text).catch(() => {
@@ -119,7 +129,7 @@ function App() {
     } else {
       window.prompt('复制内容：', text)
     }
-  }
+  }, [])
 
   return (
     <div className="app-shell">

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, memo, useCallback } from 'react'
 
 const MODEL_OPTIONS = [
   { value: 'deepseek-chat', label: 'DeepSeek Chat', icon: '💬' },
@@ -6,7 +6,7 @@ const MODEL_OPTIONS = [
   { value: 'gpt-4o', label: 'ChatGPT 4o', icon: '🤖' },
 ]
 
-function Composer({
+const Composer = memo(function Composer({
   value,
   onChange,
   onSubmit,
@@ -23,7 +23,7 @@ function Composer({
 }) {
   const fileInputRef = useRef(null)
 
-  const handleKeyDown = (event) => {
+  const handleKeyDown = useCallback((event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       if (isStreaming) {
@@ -32,20 +32,20 @@ function Composer({
         onSubmit?.()
       }
     }
-  }
+  }, [isStreaming, onStopGeneration, onSubmit])
 
-  const handleFileClick = () => {
+  const handleFileClick = useCallback(() => {
     fileInputRef.current?.click()
-  }
+  }, [])
 
-  const handleFileChange = (event) => {
+  const handleFileChange = useCallback((event) => {
     const files = Array.from(event.target.files || [])
     if (files.length > 0) {
       onFileSelect?.(files)
     }
     // 清空 input，允许重复选择同一文件
     event.target.value = ''
-  }
+  }, [onFileSelect])
 
   const hasText = Boolean(value?.trim())
   const hasContent = hasText || attachments.length > 0
@@ -133,11 +133,11 @@ function Composer({
           )}
         </div>
         <div className="composer-actions">
-          <span className="shortcut-hint">
+          {/* <span className="shortcut-hint">
             {isStreaming
               ? '生成中 · Enter 停止'
               : 'Enter 发送 · Shift+Enter 换行'}
-          </span>
+          </span> */}
           <button
             className={`primary-btn ${isStreaming ? 'primary-btn-stop' : ''}`}
             type="button"
@@ -156,6 +156,6 @@ function Composer({
       </div>
     </div>
   )
-}
+})
 
 export default Composer
