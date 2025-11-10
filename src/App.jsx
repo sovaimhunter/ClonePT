@@ -62,7 +62,7 @@ function App() {
   const setComposerValue = useChatStore((state) => state.setComposerValue)
   const sendMessage = useChatStore((state) => state.sendMessage)
   const stopGeneration = useChatStore((state) => state.stopGeneration)
-  const toggleModel = useChatStore((state) => state.toggleModel)
+  const setModel = useChatStore((state) => state.setModel)
   const messageListRef = useRef(null)
 
   useEffect(() => {
@@ -176,7 +176,7 @@ function App() {
           onChange={setComposerValue}
           onSubmit={sendMessage}
           onStopGeneration={stopGeneration}
-          onToggleModel={toggleModel}
+          onModelChange={setModel}
           model={model}
           disabled={!activeSession}
           isStreaming={isStreaming}

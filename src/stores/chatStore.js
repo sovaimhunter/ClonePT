@@ -31,11 +31,8 @@ export const useChatStore = create((set, get) => ({
     set({ error: null })
   },
 
-  toggleModel() {
-    const current = get().model
-    set({
-      model: current === 'deepseek-chat' ? 'deepseek-reasoner' : 'deepseek-chat',
-    })
+  setModel(model) {
+    set({ model })
   },
 
   async initialize(force = false) {

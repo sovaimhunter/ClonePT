@@ -1,13 +1,19 @@
+const MODEL_OPTIONS = [
+  { value: 'deepseek-chat', label: 'DeepSeek Chat', icon: '💬' },
+  { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner', icon: '🧠' },
+  { value: 'gpt-4o', label: 'ChatGPT 4o', icon: '🤖' },
+]
+
 function Composer({
   value,
   onChange,
   onSubmit,
   onStopGeneration,
-  onToggleModel,
+  onModelChange,
   model,
   disabled,
   isStreaming,
-  placeholder = '向 DeepSeek 提问，Shift+Enter 换行',
+  placeholder = '向 AI 提问，Shift+Enter 换行',
   draftHint,
 }) {
   const handleKeyDown = (event) => {
@@ -22,21 +28,25 @@ function Composer({
   }
 
   const hasText = Boolean(value?.trim())
+  const currentModel = MODEL_OPTIONS.find((opt) => opt.value === model) || MODEL_OPTIONS[0]
 
   return (
     <div className="composer">
       <div className="composer-input-wrapper">
-        <button
-          type="button"
-          className={`model-switch-btn ${
-            model === 'deepseek-reasoner' ? 'active' : ''
-          }`}
-          onClick={onToggleModel}
-          disabled={isStreaming || disabled}
-          aria-pressed={model === 'deepseek-reasoner'}
-        >
-          DeepThink
-        </button>
+        <div className="model-selector">
+          <select
+            className="model-select"
+            value={model}
+            onChange={(e) => onModelChange?.(e.target.value)}
+            disabled={isStreaming || disabled}
+          >
+            {MODEL_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.icon} {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <textarea
           className="composer-input"
           placeholder={placeholder}

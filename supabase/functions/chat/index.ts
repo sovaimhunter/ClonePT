@@ -3,6 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4'
 
 const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY')
 const deepseekBaseUrl = Deno.env.get('DEEPSEEK_BASE_URL') ?? 'https://api.deepseek.com'
+const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+const openaiBaseUrl = Deno.env.get('OPENAI_BASE_URL') ?? 'https://api.openai.com/v1'
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 const supabaseServiceKey =
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
@@ -19,6 +21,10 @@ const corsHeaders = {
 
 if (!deepseekApiKey) {
   console.warn('Missing DEEPSEEK_API_KEY environment variable')
+}
+
+if (!openaiApiKey) {
+  console.warn('Missing OPENAI_API_KEY environment variable')
 }
 
 if (!supabaseUrl || !supabaseServiceKey) {
@@ -122,28 +128,38 @@ serve(async (req) => {
         const historyMessages =
           historyRows?.map(({ role, content }) => ({ role, content })) ?? []
 
-        const deepseekRequestBody = {
+        // 根据模型选择 API
+        const isOpenAI = model.startsWith('gpt-')
+        const apiKey = isOpenAI ? openaiApiKey : deepseekApiKey
+        const apiBaseUrl = isOpenAI ? openaiBaseUrl : deepseekBaseUrl
+        const apiName = isOpenAI ? 'OpenAI' : 'DeepSeek'
+
+        if (!apiKey) {
+          throw new Error(`${apiName} API key not configured`)
+        }
+
+        const requestBody = {
           model,
           stream: true,
           messages: historyMessages,
         }
 
         const response = await fetch(
-          `${deepseekBaseUrl.replace(/\/$/, '')}/chat/completions`,
+          `${apiBaseUrl.replace(/\/$/, '')}/chat/completions`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${deepseekApiKey}`,
+              Authorization: `Bearer ${apiKey}`,
             },
-            body: JSON.stringify(deepseekRequestBody),
+            body: JSON.stringify(requestBody),
           },
         )
 
         if (!response.ok || !response.body) {
           const errorText = await response.text()
           throw new Error(
-            `DeepSeek API error: ${response.status} ${errorText}`,
+            `${apiName} API error: ${response.status} ${errorText}`,
           )
         }
 
@@ -189,9 +205,9 @@ serve(async (req) => {
               const data = JSON.parse(payloadStr)
               const deltaObj = data?.choices?.[0]?.delta ?? {}
               
-              // 提取 content 和 reasoning_content
+              // 提取 content 和 reasoning_content（仅 DeepSeek Reasoner 支持）
               const content = deltaObj.content
-              const reasoning = deltaObj.reasoning_content
+              const reasoning = model === 'deepseek-reasoner' ? deltaObj.reasoning_content : undefined
               
               if (content) {
                 assistantBuffer += content
