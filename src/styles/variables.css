@@ -1,0 +1,85 @@
+/**
+ * CSS 变量定义
+ * 颜色、间距、字体等全局变量
+ */
+
+:root {
+  /* 颜色系统 */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: rgba(59, 130, 246, 0.24);
+  
+  --color-secondary: #38bdf8;
+  --color-secondary-hover: #0ea5e9;
+  
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  
+  /* 背景色 */
+  --bg-app: #e2e8f0;
+  --bg-sidebar: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  --bg-panel: #f8fafc;
+  --bg-message-user: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  --bg-message-assistant: #ffffff;
+  
+  /* 文本颜色 */
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --text-light: #e2e8f0;
+  --text-inverse: #ffffff;
+  
+  /* 边框 */
+  --border-color: rgba(148, 163, 184, 0.3);
+  --border-color-light: rgba(226, 232, 240, 0.18);
+  --border-radius: 12px;
+  --border-radius-large: 16px;
+  --border-radius-small: 8px;
+  
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  
+  /* 字体 */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* 阴影 */
+  --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 8px 20px rgba(15, 23, 42, 0.12);
+  --shadow-lg: 0 12px 30px rgba(15, 118, 110, 0.25);
+  --shadow-xl: 0 20px 40px rgba(15, 23, 42, 0.18);
+  
+  /* 过渡 */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  
+  /* Z-index */
+  --z-dropdown: 1000;
+  --z-modal: 2000;
+  --z-tooltip: 3000;
+  
+  /* 布局 */
+  --sidebar-width: 280px;
+  --header-height: 80px;
+  --composer-height: auto;
+}
+

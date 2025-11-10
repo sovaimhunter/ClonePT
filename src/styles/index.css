@@ -1,0 +1,38 @@
+/**
+ * 样式主入口
+ * 导入所有模块化的 CSS 文件
+ */
+
+/* 1. 变量和基础样式 */
+@import './variables.css';
+
+/* 2. 布局 */
+@import './layout.css';
+
+/* 3. 组件样式 */
+@import './components/sidebar.css';
+@import './components/header.css';
+@import './components/message.css';
+@import './components/composer.css';
+@import './components/lightbox.css';
+
+/* 4. 响应式 */
+@import './responsive.css';
+
+/* 5. 全局样式补充 */
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+/* AI 消息中的图片保持正常大小 */
+.message-assistant .markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  margin: var(--spacing-md) 0;
+}
+

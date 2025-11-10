@@ -15,6 +15,7 @@
 - [常量使用指南](development/constants-usage.md) - 项目常量组织和使用方法
 - [ChatStore 重构 v1](development/chatstore-refactoring.md) - 辅助函数提取
 - [ChatStore 重构 v2](development/chatstore-refactoring-v2.md) - Actions 完全模块化 ⭐⭐
+- [CSS 样式重构](development/css-refactoring.md) - CSS 模块化拆分 ⭐⭐
 - [Bug 修复记录](development/bugfixes.md) - 问题排查和修复方案
 
 ## 📁 项目结构
@@ -29,7 +30,8 @@ Tot/
 │  ├─ components/          # React 组件
 │  ├─ constants/           # 常量和配置
 │  ├─ services/            # API 服务
-│  ├─ stores/              # Zustand 状态管理
+│  ├─ stores/              # Zustand 状态管理 ⭐
+│  ├─ styles/              # CSS 样式 ⭐⭐
 │  └─ utils/               # 工具函数
 │
 ├─ supabase/               # Supabase 配置

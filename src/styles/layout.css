@@ -1,0 +1,22 @@
+/**
+ * 布局样式
+ * 主要布局结构
+ */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  height: 100vh;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--bg-panel);
+  overflow: hidden;
+}
+

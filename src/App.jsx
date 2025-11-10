@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useCallback } from 'react'
-import './App.css'
+import './styles/index.css'
 import 'highlight.js/styles/atom-one-dark.css'
 import Sidebar from './components/Sidebar.jsx'
 import ChatHeader from './components/ChatHeader.jsx'
