@@ -7,6 +7,20 @@ import {
 } from '../services/chatApi.js'
 import { streamChat } from '../services/chatStream.js'
 import { extractTextFromPDF, isPDF } from '../utils/pdfExtractor.js'
+import {
+  DEFAULT_MODEL,
+  supportsFileUpload,
+  isImageType,
+  isPDFType,
+  isTextFileType,
+  TEXT_FILE_MIME_TYPES,
+  TEXT_FILE_EXTENSIONS,
+  MAX_PDF_PAGES,
+  MAX_PDF_CHARS,
+  MAX_TEXT_LENGTH,
+  ERROR_MESSAGES,
+  STATUS_MESSAGES,
+} from '../constants/index.js'
 
 let streamController = null
 
@@ -21,7 +35,7 @@ export const useChatStore = create((set, get) => ({
   lastSubmittedInput: '',
   attachments: [],
   uploadingFiles: false,
-  model: 'deepseek-chat',
+  model: DEFAULT_MODEL,
   isStreaming: false,
   streamingMessageId: null,
   hasInitialized: false,
@@ -75,10 +89,9 @@ export const useChatStore = create((set, get) => ({
         let url = null
 
         // 判断文件类型
-        const isImage = file.type.startsWith('image/')
-        const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-        const isTextFile = file.type.startsWith('text/') || 
-                          file.name.match(/\.(txt|md|csv|json|js|jsx|ts|tsx|html|css|py|java|cpp|c|h)$/i)
+        const isImage = isImageType(file.type)
+        const isPDF = isPDFType(file)
+        const isTextFile = isTextFileType(file)
 
         if (isImage) {
           // 图片：上传到 Supabase Storage，使用 URL
@@ -104,57 +117,57 @@ export const useChatStore = create((set, get) => ({
 
           if (!response.ok) {
             const errorData = await response.json()
-            throw new Error(errorData.error || '图片上传失败')
+            throw new Error(errorData.error || ERROR_MESSAGES.IMAGE_UPLOAD_FAILED)
           }
 
           const uploadedFile = await response.json()
           url = uploadedFile.url
-        } else if (isPDF && model === 'gpt-4o') {
+        } else if (isPDF && supportsFileUpload(model)) {
           // PDF：在前端提取文本
-          set({ error: `正在提取 ${file.name} 的文本...` })
+          set({ error: `${STATUS_MESSAGES.EXTRACTING_PDF.replace('...', '')} ${file.name}...` })
           
           try {
             textContent = await extractTextFromPDF(file, {
-              maxPages: 100,
-              maxChars: 100000,
+              maxPages: MAX_PDF_PAGES,
+              maxChars: MAX_PDF_CHARS,
             })
             
             if (!textContent || textContent.trim().length === 0) {
-              throw new Error('PDF 中没有可提取的文本（可能是扫描版）')
+              throw new Error(ERROR_MESSAGES.PDF_EMPTY)
             }
             
-            console.log(`PDF 文本提取成功: ${textContent.length} 字符`)
+            console.log(`${STATUS_MESSAGES.PDF_EXTRACTED}: ${textContent.length} 字符`)
             set({ error: null })
           } catch (err) {
-            console.error('PDF 提取失败', err)
+            console.error(ERROR_MESSAGES.PDF_EXTRACT_FAILED, err)
             set({ error: null })
-            throw new Error(`PDF 提取失败: ${err.message}`)
+            throw new Error(`${ERROR_MESSAGES.PDF_EXTRACT_FAILED}: ${err.message}`)
           }
-        } else if (isTextFile && model === 'gpt-4o') {
+        } else if (isTextFile && supportsFileUpload(model)) {
           // TXT 等文本文件：直接读取内容
-          set({ error: `正在读取 ${file.name}...` })
+          set({ error: `${STATUS_MESSAGES.READING_FILE.replace('...', '')} ${file.name}...` })
           
           try {
             textContent = await file.text()
             
             if (!textContent || textContent.trim().length === 0) {
-              throw new Error('文件内容为空')
+              throw new Error(ERROR_MESSAGES.TEXT_FILE_EMPTY)
             }
             
             // 限制文本长度
-            if (textContent.length > 100000) {
-              textContent = textContent.slice(0, 100000) + '\n\n... (文件过长，已截断)'
+            if (textContent.length > MAX_TEXT_LENGTH) {
+              textContent = textContent.slice(0, MAX_TEXT_LENGTH) + '\n\n... (文件过长，已截断)'
             }
             
-            console.log(`文本文件读取成功: ${textContent.length} 字符`)
+            console.log(`${STATUS_MESSAGES.TEXT_FILE_READ}: ${textContent.length} 字符`)
             set({ error: null })
           } catch (err) {
-            console.error('文本文件读取失败', err)
+            console.error(ERROR_MESSAGES.TEXT_FILE_READ_FAILED, err)
             set({ error: null })
-            throw new Error(`文本文件读取失败: ${err.message}`)
+            throw new Error(`${ERROR_MESSAGES.TEXT_FILE_READ_FAILED}: ${err.message}`)
           }
         } else {
-          throw new Error('不支持的文件类型或模型（仅 GPT-4o 支持文档上传）')
+          throw new Error(ERROR_MESSAGES.UNSUPPORTED_TYPE)
         }
 
         // 添加到附件列表
@@ -168,8 +181,8 @@ export const useChatStore = create((set, get) => ({
         })
       }
     } catch (error) {
-      console.error('文件上传失败', error)
-      set({ error: error.message || '文件上传失败' })
+      console.error(ERROR_MESSAGES.UPLOAD_FAILED, error)
+      set({ error: error.message || ERROR_MESSAGES.UPLOAD_FAILED })
     } finally {
       set({ uploadingFiles: false })
     }
@@ -254,7 +267,7 @@ export const useChatStore = create((set, get) => ({
       }))
     } catch (error) {
       console.error(error)
-      set({ error: error.message || '创建会话失败' })
+      set({ error: error.message || ERROR_MESSAGES.SESSION_CREATE_FAILED })
     }
   },
 
@@ -277,7 +290,7 @@ export const useChatStore = create((set, get) => ({
       }
     } catch (error) {
       console.error(error)
-      set({ error: error.message || '删除会话失败' })
+      set({ error: error.message || ERROR_MESSAGES.SESSION_DELETE_FAILED })
     }
   },
 
@@ -312,7 +325,7 @@ export const useChatStore = create((set, get) => ({
     if (!text && attachments.length === 0) return
 
     if (!activeSessionId) {
-      set({ error: '请先选择或新建一个会话' })
+      set({ error: ERROR_MESSAGES.NO_SESSION_SELECTED })
       return
     }
 
@@ -347,7 +360,10 @@ export const useChatStore = create((set, get) => ({
         })
       
       if (contentParts.length > 0) {
-        userMessageContent = contentParts.join('\n\n') + '\n\n' + text
+        // 如果有文本消息，附加在附件后面；否则只用附件内容
+        userMessageContent = text
+          ? contentParts.join('\n\n') + '\n\n' + text
+          : contentParts.join('\n\n')
       }
     }
 

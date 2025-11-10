@@ -84,8 +84,8 @@ serve(async (req) => {
     attachments = [],
   } = payload
 
-  if (!message || typeof message !== 'string') {
-    return new Response(JSON.stringify({ error: 'Missing message text' }), {
+  if (!message && attachments.length === 0) {
+    return new Response(JSON.stringify({ error: 'Missing message text or attachments' }), {
       status: 400,
       headers: {
         'Content-Type': 'application/json',
@@ -100,10 +100,18 @@ serve(async (req) => {
         let targetSessionId = sessionId
 
         if (!targetSessionId) {
+          // 生成会话标题：优先使用消息文本，否则使用第一个附件名
+          let title = '新的对话'
+          if (message && message.trim()) {
+            title = message.slice(0, 32)
+          } else if (attachments.length > 0) {
+            title = `图片: ${attachments[0].name.slice(0, 24)}`
+          }
+          
           const { data: newSession, error: sessionError } = await supabase
             .from('sessions')
             .insert({
-              title: message.slice(0, 32) || '新的对话',
+              title,
               model,
             })
             .select('id')
@@ -118,7 +126,7 @@ serve(async (req) => {
         }
 
         // 构建用户消息内容（图片和文档）
-        let userMessageContent = message
+        let userMessageContent = message || ''
         
         if (attachments.length > 0) {
           console.log('后端接收附件:', attachments.map((att: any) => ({
@@ -151,7 +159,10 @@ serve(async (req) => {
           }
           
           if (contentParts.length > 0) {
-            userMessageContent = contentParts.join('\n\n') + '\n\n' + message
+            // 如果有文本消息，附加在附件后面；否则只用附件内容
+            userMessageContent = message && message.trim()
+              ? contentParts.join('\n\n') + '\n\n' + message
+              : contentParts.join('\n\n')
             console.log(`最终消息长度: ${userMessageContent.length}`)
           }
         }

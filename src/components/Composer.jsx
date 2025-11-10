@@ -1,10 +1,6 @@
 import { useRef, memo, useCallback } from 'react'
-
-const MODEL_OPTIONS = [
-  { value: 'deepseek-chat', label: 'DeepSeek Chat', icon: '💬' },
-  { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner', icon: '🧠' },
-  { value: 'gpt-4o', label: 'ChatGPT 4o', icon: '🤖' },
-]
+import { MODEL_OPTIONS, supportsFileUpload } from '../constants/models.js'
+import { ACCEPTED_FILE_TYPES } from '../constants/fileTypes.js'
 
 const Composer = memo(function Composer({
   value,
@@ -50,7 +46,7 @@ const Composer = memo(function Composer({
   const hasText = Boolean(value?.trim())
   const hasContent = hasText || attachments.length > 0
   const currentModel = MODEL_OPTIONS.find((opt) => opt.value === model) || MODEL_OPTIONS[0]
-  const supportsFiles = model === 'gpt-4o'
+  const supportsFiles = supportsFileUpload(model)
 
   return (
     <div className="composer">
@@ -116,7 +112,7 @@ const Composer = memo(function Composer({
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,.pdf,.txt,.md,.json,.csv,.js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.h,.html,.css"
+                accept={ACCEPTED_FILE_TYPES}
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
               />
@@ -125,7 +121,7 @@ const Composer = memo(function Composer({
                 className="attach-btn"
                 onClick={handleFileClick}
                 disabled={disabled || isStreaming}
-                title="上传文件（仅 GPT-4o）"
+                title="上传文件（仅 GPT-4o Mini）"
               >
                 📎 附件
               </button>

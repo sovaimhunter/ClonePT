@@ -6,6 +6,7 @@ import ChatHeader from './components/ChatHeader.jsx'
 import Message from './components/Message.jsx'
 import Composer from './components/Composer.jsx'
 import { useChatStore } from './stores/chatStore.js'
+import { PLACEHOLDER_MESSAGES, CONFIRM_MESSAGES, formatTokenInfo } from './constants/index.js'
 
 function formatRelativeTime(value) {
   if (!value) return '刚刚'
@@ -113,7 +114,7 @@ function App() {
         ...message,
         name: message.role === 'user' ? '我' : 'DeepSeek 助手',
         time: formatMessageTime(message.created_at),
-        tokenInfo: message.tokens ? `消耗 ${message.tokens} tokens` : null,
+        tokenInfo: formatTokenInfo(message.tokens),
         reasoning: message.reasoning,
       })),
     [messages],
@@ -140,11 +141,7 @@ function App() {
         onCreateSession={createNewSession}
         onDeleteSession={(sessionId) => {
           if (!sessionId) return
-          if (
-            window.confirm(
-              '确定要删除该对话吗？此操作不可撤销，将删除会话及其全部消息。',
-            )
-          ) {
+          if (window.confirm(CONFIRM_MESSAGES.DELETE_SESSION)) {
             removeSession(sessionId)
           }
         }}
@@ -153,14 +150,14 @@ function App() {
         <ChatHeader session={headerSession} />
         <section className="message-list" ref={messageListRef}>
           {loadingSessions && sessions.length === 0 ? (
-            <div className="message-placeholder">正在加载会话…</div>
+            <div className="message-placeholder">{PLACEHOLDER_MESSAGES.LOADING_SESSIONS}</div>
           ) : loadingMessages && messages.length === 0 ? (
-            <div className="message-placeholder">正在加载消息…</div>
+            <div className="message-placeholder">{PLACEHOLDER_MESSAGES.LOADING_MESSAGES}</div>
           ) : displayMessages.length === 0 ? (
             <div className="message-placeholder">
               {activeSession
-                ? '暂时没有消息，开始输入与 DeepSeek 对话吧。'
-                : '新建一个会话或选择已有会话开始聊天。'}
+                ? PLACEHOLDER_MESSAGES.EMPTY_CHAT
+                : PLACEHOLDER_MESSAGES.NO_SESSION}
             </div>
           ) : (
             displayMessages.map((message) => (
