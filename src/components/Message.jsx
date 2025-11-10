@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
+import ImageLightbox from './ImageLightbox.jsx'
 
 function Message({
   role = 'assistant',
@@ -17,10 +19,19 @@ function Message({
   const safeContent = content ?? ''
   const canCopy = Boolean(safeContent) && !isStreaming
   const reasoningText = (reasoning ?? '').trim()
+  const [lightboxImage, setLightboxImage] = useState(null)
 
   const handleCopy = () => {
     if (!canCopy) return
     onCopy?.(safeContent)
+  }
+
+  const handleImageClick = (img) => {
+    setLightboxImage(img)
+  }
+
+  const handleCloseLightbox = () => {
+    setLightboxImage(null)
   }
 
   // 从 content 中提取图片 Markdown 和文本
@@ -61,6 +72,15 @@ function Message({
                 src={img.url}
                 alt={img.alt}
                 className="message-image-thumbnail"
+                onClick={() => handleImageClick(img)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleImageClick(img)
+                  }
+                }}
               />
             ))}
           </div>
@@ -105,6 +125,13 @@ function Message({
           />
         )}
       </div>
+      {lightboxImage && (
+        <ImageLightbox
+          src={lightboxImage.url}
+          alt={lightboxImage.alt}
+          onClose={handleCloseLightbox}
+        />
+      )}
     </article>
   )
 }
