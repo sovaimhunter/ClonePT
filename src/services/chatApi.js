@@ -16,7 +16,7 @@ export async function listSessions() {
 export async function listMessages(sessionId) {
   const { data, error } = await supabase
     .from('messages')
-    .select('id, role, content, tokens, created_at')
+    .select('id, role, content, tokens, created_at, reasoning, attachments')
     .eq('session_id', sessionId)
     .order('created_at', { ascending: true })
 

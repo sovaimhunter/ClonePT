@@ -53,7 +53,12 @@ serve(async (req) => {
     },
   })
 
-  let payload: { sessionId?: number; message?: string; model?: string } = {}
+  let payload: {
+    sessionId?: number
+    message?: string
+    model?: string
+    attachments?: Array<{ url: string; type: string; name: string }>
+  } = {}
 
   try {
     payload = await req.json()
@@ -67,7 +72,12 @@ serve(async (req) => {
     })
   }
 
-  const { sessionId, message, model = 'deepseek-chat' } = payload
+  const {
+    sessionId,
+    message,
+    model = 'deepseek-chat',
+    attachments = [],
+  } = payload
 
   if (!message || typeof message !== 'string') {
     return new Response(JSON.stringify({ error: 'Missing message text' }), {
@@ -102,12 +112,30 @@ serve(async (req) => {
           targetSessionId = newSession.id
         }
 
+        // 构建用户消息内容（包含附件的 Markdown）
+        let userMessageContent = message
+        
+        if (attachments.length > 0) {
+          // 在消息前添加图片 Markdown
+          const attachmentMarkdown = attachments
+            .map((att) => {
+              if (att.type.startsWith('image/')) {
+                return `![${att.name}](${att.url})`
+              }
+              return `[📎 ${att.name}](${att.url})`
+            })
+            .join('\n')
+          
+          userMessageContent = attachmentMarkdown + '\n\n' + message
+        }
+
         const { error: insertUserMessageError } = await supabase
           .from('messages')
           .insert({
             session_id: targetSessionId,
             role: 'user',
-            content: message,
+            content: userMessageContent,
+            attachments: attachments.length > 0 ? attachments : null,
           })
 
         if (insertUserMessageError) {
@@ -136,6 +164,37 @@ serve(async (req) => {
 
         if (!apiKey) {
           throw new Error(`${apiName} API key not configured`)
+        }
+
+        // 构建最后一条消息（可能包含附件）
+        const lastMessage = historyMessages[historyMessages.length - 1]
+        
+        // 如果有附件且是 OpenAI 模型，使用 vision 格式
+        if (attachments.length > 0 && isOpenAI && lastMessage) {
+          const contentParts: Array<
+            { type: string; text?: string; image_url?: { url: string } }
+          > = []
+
+          // 添加文本内容
+          if (lastMessage.content) {
+            contentParts.push({ type: 'text', text: lastMessage.content })
+          }
+
+          // 添加图片
+          for (const attachment of attachments) {
+            if (attachment.type.startsWith('image/')) {
+              contentParts.push({
+                type: 'image_url',
+                image_url: { url: attachment.url },
+              })
+            }
+          }
+
+          // 替换最后一条消息为多模态格式
+          historyMessages[historyMessages.length - 1] = {
+            role: lastMessage.role,
+            content: contentParts,
+          }
         }
 
         const requestBody = {

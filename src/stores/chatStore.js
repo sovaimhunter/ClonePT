@@ -18,6 +18,8 @@ export const useChatStore = create((set, get) => ({
   error: null,
   composerValue: '',
   lastSubmittedInput: '',
+  attachments: [],
+  uploadingFiles: false,
   model: 'deepseek-chat',
   isStreaming: false,
   streamingMessageId: null,
@@ -33,6 +35,88 @@ export const useChatStore = create((set, get) => ({
 
   setModel(model) {
     set({ model })
+  },
+
+  addAttachment(attachment) {
+    set((state) => ({
+      attachments: [...state.attachments, attachment],
+    }))
+  },
+
+  removeAttachment(index) {
+    set((state) => ({
+      attachments: state.attachments.filter((_, i) => i !== index),
+    }))
+  },
+
+  clearAttachments() {
+    set({ attachments: [] })
+  },
+
+  async uploadFiles(files) {
+    const { activeSessionId } = get()
+    set({ uploadingFiles: true, error: null })
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const functionBaseUrl =
+        import.meta.env.VITE_SUPABASE_FUNCTION_URL ??
+        (supabaseUrl ? `${supabaseUrl.replace(/\/$/, '')}/functions/v1` : '')
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+      if (!functionBaseUrl) {
+        throw new Error('Supabase Function 地址未配置')
+      }
+
+      for (const file of files) {
+        // 创建预览
+        let preview = null
+        if (file.type.startsWith('image/')) {
+          preview = URL.createObjectURL(file)
+        }
+
+        // 上传文件
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('sessionId', activeSessionId || '')
+        formData.append('type', 'vision')
+
+        const response = await fetch(`${functionBaseUrl}/upload-file`, {
+          method: 'POST',
+          headers: {
+            ...(supabaseAnonKey
+              ? {
+                  apikey: supabaseAnonKey,
+                  Authorization: `Bearer ${supabaseAnonKey}`,
+                }
+              : {}),
+          },
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || '文件上传失败')
+        }
+
+        const uploadedFile = await response.json()
+
+        // 添加到附件列表
+        get().addAttachment({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          preview,
+          url: uploadedFile.url,
+          storagePath: uploadedFile.storagePath,
+        })
+      }
+    } catch (error) {
+      console.error('文件上传失败', error)
+      set({ error: error.message || '文件上传失败' })
+    } finally {
+      set({ uploadingFiles: false })
+    }
   },
 
   async initialize(force = false) {
@@ -159,11 +243,17 @@ export const useChatStore = create((set, get) => ({
   },
 
   async sendMessage() {
-    const { composerValue, activeSessionId, isStreaming, messages, model } =
-      get()
+    const {
+      composerValue,
+      activeSessionId,
+      isStreaming,
+      messages,
+      model,
+      attachments,
+    } = get()
     const text = (composerValue ?? '').trim()
 
-    if (!text) return
+    if (!text && attachments.length === 0) return
 
     if (!activeSessionId) {
       set({ error: '请先选择或新建一个会话' })
@@ -180,19 +270,40 @@ export const useChatStore = create((set, get) => ({
 
     const useReasoning = model === 'deepseek-reasoner'
 
+    // 构建用户消息内容（包含附件的 Markdown）
+    let userMessageContent = text
+    
+    if (attachments.length > 0) {
+      // 在消息前添加图片 Markdown
+      const attachmentMarkdown = attachments
+        .map((att) => {
+          if (att.type?.startsWith('image/')) {
+            return `![${att.name}](${att.url || att.preview})`
+          }
+          return `[📎 ${att.name}](${att.url || att.preview})`
+        })
+        .join('\n')
+      
+      userMessageContent = attachmentMarkdown + '\n\n' + text
+    }
+
+    // 构建用户消息
+    const userMessage = {
+      id: tempUserId,
+      role: 'user',
+      content: userMessageContent,
+      created_at: now,
+      temp: true,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    }
+
     set({
       composerValue: '',
       lastSubmittedInput: text,
       error: null,
       messages: [
         ...messages,
-        {
-          id: tempUserId,
-          role: 'user',
-          content: text,
-          created_at: now,
-          temp: true,
-        },
+        userMessage,
         {
           id: tempAssistantId,
           role: 'assistant',
@@ -206,10 +317,14 @@ export const useChatStore = create((set, get) => ({
       streamingMessageId: tempAssistantId,
     })
 
+    // 清空附件
+    get().clearAttachments()
+
     streamController = streamChat({
       sessionId: activeSessionId,
       message: text,
       model,
+      attachments: attachments.length > 0 ? attachments : undefined,
       onSession: async ({ sessionId: newSessionId, session }) => {
         if (newSessionId && newSessionId !== get().activeSessionId) {
           set({ activeSessionId: newSessionId })

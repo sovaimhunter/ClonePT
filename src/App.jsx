@@ -56,6 +56,7 @@ function App() {
   const isStreaming = useChatStore((state) => state.isStreaming)
   const streamingMessageId = useChatStore((state) => state.streamingMessageId)
   const model = useChatStore((state) => state.model)
+  const attachments = useChatStore((state) => state.attachments)
   const selectSession = useChatStore((state) => state.selectSession)
   const createNewSession = useChatStore((state) => state.createNewSession)
   const removeSession = useChatStore((state) => state.removeSession)
@@ -63,6 +64,8 @@ function App() {
   const sendMessage = useChatStore((state) => state.sendMessage)
   const stopGeneration = useChatStore((state) => state.stopGeneration)
   const setModel = useChatStore((state) => state.setModel)
+  const uploadFiles = useChatStore((state) => state.uploadFiles)
+  const removeAttachment = useChatStore((state) => state.removeAttachment)
   const messageListRef = useRef(null)
 
   useEffect(() => {
@@ -164,6 +167,7 @@ function App() {
                 content={message.content}
                 tokenInfo={message.tokenInfo}
                 reasoning={message.reasoning}
+                attachments={message.attachments}
                 isStreaming={isStreaming && message.id === streamingMessageId}
                 onCopy={handleCopyMessage}
               />
@@ -177,6 +181,9 @@ function App() {
           onSubmit={sendMessage}
           onStopGeneration={stopGeneration}
           onModelChange={setModel}
+          onFileSelect={uploadFiles}
+          attachments={attachments}
+          onRemoveAttachment={removeAttachment}
           model={model}
           disabled={!activeSession}
           isStreaming={isStreaming}

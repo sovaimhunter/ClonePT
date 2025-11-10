@@ -11,6 +11,7 @@ function Message({
   isStreaming,
   onCopy,
   reasoning,
+  attachments = [],
 }) {
   const isUser = role === 'user'
   const safeContent = content ?? ''
@@ -29,21 +30,21 @@ function Message({
     >
       <div className="message-avatar">{isUser ? '我' : 'AI'}</div>
       <div className="message-content">
-        <div className="message-meta">
-          <span className="message-author">{name}</span>
-          <span className="message-time">{time}</span>
-        </div>
-        {!isUser && reasoningText && (
-          <div className="message-reasoning">
-            <div className="reasoning-label">DeepThink</div>
-            <div className="reasoning-body">
-              {reasoningText.split(/\n+/).map((line, index) => (
-                <p key={index}>{line}</p>
-              ))}
-            </div>
+          <div className="message-meta">
+            <span className="message-author">{name}</span>
+            <span className="message-time">{time}</span>
           </div>
-        )}
-        <div className={`message-body ${isStreaming ? 'message-streaming' : ''}`}>
+          {!isUser && reasoningText && (
+            <div className="message-reasoning">
+              <div className="reasoning-label">DeepThink</div>
+              <div className="reasoning-body">
+                {reasoningText.split(/\n+/).map((line, index) => (
+                  <p key={index}>{line}</p>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className={`message-body ${isStreaming ? 'message-streaming' : ''}`}>
           <div className="markdown-body">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}

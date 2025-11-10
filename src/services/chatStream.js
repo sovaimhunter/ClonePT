@@ -12,6 +12,7 @@ export function streamChat({
   sessionId,
   message,
   model = 'deepseek-chat',
+  attachments,
   onSession,
   onDelta,
   onComplete,
@@ -28,6 +29,16 @@ export function streamChat({
   ;(async () => {
     try {
       const useReasoning = model === 'deepseek-reasoner'
+      const requestBody = {
+        sessionId,
+        message,
+        model,
+      }
+
+      if (attachments && attachments.length > 0) {
+        requestBody.attachments = attachments
+      }
+
       const response = await fetch(`${functionBaseUrl}/chat`, {
         method: 'POST',
         headers: {
@@ -39,11 +50,7 @@ export function streamChat({
               }
             : {}),
         },
-        body: JSON.stringify({
-          sessionId,
-          message,
-          model,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       })
 
