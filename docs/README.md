@@ -13,6 +13,8 @@
 
 - [部署指南](development/deployment.md) - Supabase 部署说明
 - [常量使用指南](development/constants-usage.md) - 项目常量组织和使用方法
+- [ChatStore 重构 v1](development/chatstore-refactoring.md) - 辅助函数提取
+- [ChatStore 重构 v2](development/chatstore-refactoring-v2.md) - Actions 完全模块化 ⭐⭐
 - [Bug 修复记录](development/bugfixes.md) - 问题排查和修复方案
 
 ## 📁 项目结构
