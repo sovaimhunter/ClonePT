@@ -1,4 +1,4 @@
-function ChatHeader({ session, onCopyConversation }) {
+function ChatHeader({ session }) {
   if (!session) {
     return (
       <header className="chat-header">
@@ -18,16 +18,6 @@ function ChatHeader({ session, onCopyConversation }) {
           {session.model ?? 'DeepSeek · Chat'} · 最近更新{' '}
           {session.updatedLabel}
         </p>
-      </div>
-      <div className="chat-header-actions">
-        <button
-          className="ghost-btn"
-          type="button"
-          onClick={onCopyConversation}
-          disabled={!session}
-        >
-          复制会话
-        </button>
       </div>
     </header>
   )

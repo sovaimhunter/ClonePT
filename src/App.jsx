@@ -150,12 +150,7 @@ function App() {
         }}
       />
       <main className="chat-panel">
-        <ChatHeader
-          session={headerSession}
-          onCopyConversation={() => {
-            // TODO: 实现复制功能
-          }}
-        />
+        <ChatHeader session={headerSession} />
         <section className="message-list" ref={messageListRef}>
           {loadingSessions && sessions.length === 0 ? (
             <div className="message-placeholder">正在加载会话…</div>
