@@ -90,7 +90,12 @@ function Sidebar({
       </div>
 
       <div className="sidebar-footer">
-        <button className="feedback-btn">反馈问题</button>
+        <button 
+          className="feedback-btn"
+          onClick={() => alert('逗逗你的，还真想反馈？😄')}
+        >
+          反馈问题
+        </button>
         <div className="profile">
           <div className="profile-avatar">JL</div>
           <div>
